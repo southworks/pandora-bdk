@@ -1,5 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
+using Application.Common.Models;
 using Infrastructure.Core.Common;
 using Microsoft.Graph;
 
@@ -19,6 +20,15 @@ namespace BotService.Infrastructure.Common
         {
             var meetingUrlHelper = new MeetingUrlHelper();
             meetingUrlHelper.Init(joinUrl);
+
+            var parsedMeetingUrl = meetingUrlHelper.GetParsedMeetingUrl();
+
+            if (parsedMeetingUrl.JoinUrlType == MeetingJoinUrlType.JoinMeetingId)
+            {
+                var joinMeetingInfo = new JoinMeetingIdMeetingInfo(parsedMeetingUrl.MeetingId, parsedMeetingUrl.Passcode);
+
+                return (null, joinMeetingInfo);
+            }
 
             var context = meetingUrlHelper.GetContext();
             var thread = meetingUrlHelper.GetThreadId();

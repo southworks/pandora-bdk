@@ -1,10 +1,9 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 using System;
-using System.Net;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Application.Common;
 using Application.Common.Models;
 using Application.Exceptions;
 using Application.Interfaces.Common;
@@ -50,10 +49,7 @@ namespace Application.Call.Commands
                 RuleFor(x => x.MeetingUrl)
                     .Custom((meetingUrl, context) =>
                     {
-                        var decodedUrl = WebUtility.UrlDecode(meetingUrl);
-                        var regex = new Regex("https://teams\\.microsoft\\.com.*/(?<thread>[^/]+)/(?<message>[^/]+)\\?context=(?<context>{.*})");
-                        var match = regex.Match(decodedUrl);
-                        if (!match.Success)
+                        if (!MeetingUrlParser.TryParse(meetingUrl, out _))
                         {
                             context.AddFailure("MeetingUrl cannot be parsed");
                         }

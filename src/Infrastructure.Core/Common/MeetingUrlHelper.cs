@@ -1,65 +1,54 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 using System;
-using System.Net;
-using System.Text.RegularExpressions;
+using Application.Common;
 using Application.Common.Models;
 using BotService.Infrastructure.Common;
-using Newtonsoft.Json;
 
 namespace Infrastructure.Core.Common
 {
     public class MeetingUrlHelper : IMeetingUrlHelper
     {
-        private Match match;
+        private ParsedMeetingUrl parsedMeetingUrl;
 
         public void Init(string joinUrl)
         {
-            string decodedUrl = WebUtility.UrlDecode(joinUrl);
-
-            var regex = new Regex("https://teams\\.microsoft\\.com.*/(?<thread>[^/]+)/(?<message>[^/]+)\\?context=(?<context>{.*})");
-            match = regex.Match(decodedUrl);
-
-            if (!match.Success)
-            {
-                throw new ArgumentException($"Join URL cannot be parsed: {joinUrl}.", nameof(joinUrl));
-            }
+            parsedMeetingUrl = MeetingUrlParser.Parse(joinUrl);
         }
 
         public string GetThreadId()
         {
-            var threadId = match.Groups["thread"].Value;
-
-            return threadId;
+            return parsedMeetingUrl.ThreadId;
         }
 
         public string GetMessageId()
         {
-            var messageId = match.Groups["message"].Value;
-
-            return messageId;
+            return parsedMeetingUrl.MessageId;
         }
 
         public JoinUrlContext GetContext()
         {
-            var context = JsonConvert.DeserializeObject<JoinUrlContext>(match.Groups["context"].Value);
+            return parsedMeetingUrl.Context;
+        }
 
-            return context;
+        public ParsedMeetingUrl GetParsedMeetingUrl()
+        {
+            return parsedMeetingUrl;
         }
 
         public string GetMeetingId()
         {
-            var template = $"0#{match.Groups["thread"].Value}#0";
-
-            var meetingId = Base64Encode(template);
-
-            return meetingId;
+            return parsedMeetingUrl.MeetingId;
         }
 
-        private static string Base64Encode(string plainText)
+        public string GetPasscode()
         {
-            var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
-            return Convert.ToBase64String(plainTextBytes);
+            return parsedMeetingUrl.Passcode;
+        }
+
+        public MeetingJoinUrlType GetUrlType()
+        {
+            return parsedMeetingUrl.JoinUrlType;
         }
     }
 }

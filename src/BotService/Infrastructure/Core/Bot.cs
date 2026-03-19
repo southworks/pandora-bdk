@@ -36,6 +36,7 @@ namespace BotService.Infrastructure.Core
         private readonly IMediaHandlerFactory _mediaHandlerFactory;
         private readonly ILoggerFactory _loggerFactory;
         private readonly BotConfiguration _config;
+        private readonly string _tenantId;
         private readonly ILogger<Bot> _logger;
         private readonly GstreamerClockProvider _clockProvider;
 
@@ -54,6 +55,7 @@ namespace BotService.Infrastructure.Core
             _loggerFactory = loggerFactory;
 
             _config = config.BotConfiguration;
+            _tenantId = config.AzureAdConfiguration.TenantId;
             _logger = loggerFactory.CreateLogger<Bot>();
 
             _client.Calls().OnIncoming += CallsOnIncoming;
@@ -78,7 +80,7 @@ namespace BotService.Infrastructure.Core
 
             (chatInfo, meetingInfo) = JoinInfoHelper.ParseJoinURL(command.MeetingUrl);
 
-            var tenantId = (meetingInfo as OrganizerMeetingInfo)?.Organizer.GetPrimaryIdentity()?.GetTenantId();
+            var tenantId = (meetingInfo as OrganizerMeetingInfo)?.Organizer.GetPrimaryIdentity()?.GetTenantId() ?? _tenantId;
             var mediaSession = CreateLocalMediaSession();
 
             var joinParams = new JoinMeetingParameters(chatInfo, meetingInfo, mediaSession)
