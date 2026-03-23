@@ -42,7 +42,7 @@ namespace Application.Service.Commands
                     throw new EntityNotFoundException(nameof(Call), request.CallId);
                 }
 
-                await _bot.MuteBotAsync();
+                await _bot.MuteBotAsync(request.CallId);
 
                 call.IsBotMuted = true;
 

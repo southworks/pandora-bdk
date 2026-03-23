@@ -77,7 +77,9 @@ namespace BotService
                 _configurationRoot,
                 certificate);
 
+            Log.Information("Web host builder created. Building web host.");
             var host = hostBuilder.Build();
+            Log.Information("Web host build completed successfully.");
 
             if (isService)
             {

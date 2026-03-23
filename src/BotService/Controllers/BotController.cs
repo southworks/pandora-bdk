@@ -11,6 +11,7 @@ using Infrastructure.Core.Common.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Serilog;
 using static Application.Service.Commands.ProcessNotification;
 
 namespace BotService.Controllers
@@ -85,6 +86,7 @@ namespace BotService.Controllers
         [Route("call/{callId}/stream/start-injection")]
         public async Task<ActionResult> StartInjectionAsync([FromRoute] string callId, [FromBody] DoStartInjection.DoStartInjectionCommand command)
         {
+            command.Body.CallId = callId;
             var response = await _mediator.Send(command);
 
             return Ok(response);
@@ -137,6 +139,7 @@ namespace BotService.Controllers
         [Route("call/{callId}/stream/start-extraction")]
         public async Task<ActionResult> StartExtractionAsync([FromRoute] string callId, [FromBody] DoStartExtraction.DoStartExtractionCommand command)
         {
+            command.Body.CallId = callId;
             var response = await _mediator.Send(command);
 
             return Ok(response);
@@ -191,12 +194,16 @@ namespace BotService.Controllers
         [Route(HttpRouteConstants.OnIncomingRequestRoute)]
         public async Task<IActionResult> OnIncomingRequestAsync()
         {
+            Log.Information("[BotController] Received Graph calling notification request on {path}.", Request?.Path.Value);
+
             var command = new ProcessNotificationCommand
             {
                 HttpRequestMessage = Request.CreateRequestMessage(),
             };
 
             var response = await _mediator.Send(command);
+
+            Log.Information("[BotController] Completed Graph calling notification request on {path}.", Request?.Path.Value);
 
             return Ok(response);
         }

@@ -1,5 +1,11 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Reflection;
 using Application.Common.Config;
 using BotService.Infrastructure.Extensions;
 using Microsoft.Extensions.Logging;
@@ -44,8 +50,20 @@ namespace BotService.Infrastructure.Client
             _logger.LogInformation("Setting AuthenticationProvider for {clientName}", clientName);
             communicationClientBuilder.SetAuthenticationProvider(authProvider);
 
+            _logger.LogInformation("Configuring HttpClient for {clientName}", clientName);
+            var httpClientHandler = new HttpClientHandler
+            {
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+            };
+            var loggingHandler = new GraphCreateCallLoggingHandler(httpClientHandler, _logger);
+            var httpClient = new HttpClient(loggingHandler, disposeHandler: true);
+            IEnumerable<KeyValuePair<string, string>> defaultHeaders = Array.Empty<KeyValuePair<string, string>>();
+            communicationClientBuilder.SetHttpClient(httpClient, defaultHeaders);
+
             _logger.LogInformation("Setting NotificationUrl for {clientName}", clientName);
             communicationClientBuilder.SetNotificationUrl(_configuration.BotConfiguration.CallControlBaseUrl);
+
+            RegisterAdditionalAssemblies(communicationClientBuilder, clientName);
 
             _logger.LogInformation("Getting MediaPlatformSettings for {clientName}", clientName);
             var mediaPlatformSettings = _configuration.BotConfiguration.GetMediaPlatformSettings();
@@ -62,6 +80,31 @@ namespace BotService.Infrastructure.Client
             _logger.LogInformation("Communication Client for {clientName} has been succesfully built", clientName);
 
             return client;
+        }
+
+        private void RegisterAdditionalAssemblies(CommunicationsClientBuilder communicationClientBuilder, string clientName)
+        {
+            var builderType = typeof(CommunicationsClientBuilder);
+            var additionalAssembliesField = builderType.GetField("additionalAssemblies", BindingFlags.Instance | BindingFlags.NonPublic);
+
+            if (additionalAssembliesField == null)
+            {
+                _logger.LogWarning("Unable to locate CommunicationsClientBuilder.additionalAssemblies for {clientName}.", clientName);
+                return;
+            }
+
+            var currentAssemblies = additionalAssembliesField.GetValue(communicationClientBuilder) as IEnumerable<Assembly>;
+            var updatedAssemblies = (currentAssemblies ?? Enumerable.Empty<Assembly>())
+                .Concat(new[] { typeof(GraphCommunicationsClientBuilder).Assembly })
+                .Distinct()
+                .ToArray();
+
+            additionalAssembliesField.SetValue(communicationClientBuilder, updatedAssemblies);
+
+            _logger.LogInformation(
+                "Registered additional OData assemblies for {clientName}: {assemblies}",
+                clientName,
+                string.Join(", ", updatedAssemblies.Select(assembly => assembly.GetName().Name)));
         }
     }
 }

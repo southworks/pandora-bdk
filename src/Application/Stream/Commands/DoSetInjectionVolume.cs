@@ -80,7 +80,7 @@ namespace Application.Stream.Commands
                     Format = request.Format,
                 };
 
-                _bot.SetInjectionVolume(injectionVolume);
+                _bot.SetInjectionVolume(request.CallId, injectionVolume);
 
                 stream.Details.StreamVolume = new StreamVolume
                 {

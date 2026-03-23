@@ -68,7 +68,7 @@ namespace Application.Stream.Commands
 
                 var stream = streams.First();
 
-                _bot.HideInjection();
+                _bot.HideInjection(request.CallId);
 
                 stream.Details.VideoFeedOn = false;
 

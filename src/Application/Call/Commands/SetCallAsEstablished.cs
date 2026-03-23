@@ -2,9 +2,11 @@
 // Licensed under the MIT license.
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Application.Interfaces.Persistance;
+using Application.Participants.Specifications;
 using Domain.Entities;
 using Domain.Entities.Parts;
 using Domain.Enums;
@@ -47,28 +49,6 @@ namespace Application.Call.Commands
             private readonly IParticipantStreamRepository _participantStreamRepository;
             private readonly ILogger<SetCallAsEstablishedCommandHandler> _logger;
 
-            private readonly List<ParticipantStream> defaultParticipantStreams = new List<ParticipantStream>
-            {
-                new ParticipantStream
-                {
-                    ParticipantGraphId = Guid.NewGuid().ToString(),
-                    DisplayName = DefaultParticipantsDisplayNames.PrimarySpeaker,
-                    Type = ResourceType.PrimarySpeaker,
-                    State = StreamState.Disconnected,
-                    IsHealthy = true,
-                    Details = new ParticipantStreamDetails(),
-                },
-                new ParticipantStream
-                {
-                    ParticipantGraphId = Guid.NewGuid().ToString(),
-                    DisplayName = DefaultParticipantsDisplayNames.ScreenShare,
-                    Type = ResourceType.Vbss,
-                    State = StreamState.Disconnected,
-                    IsHealthy = true,
-                    Details = new ParticipantStreamDetails(),
-                },
-            };
-
             public SetCallAsEstablishedCommandHandler(
                 ICallRepository callRepository,
                 IParticipantStreamRepository participantStreamRepository,
@@ -90,28 +70,71 @@ namespace Application.Call.Commands
                     throw new EntityNotFoundException($"Call with id  {request.CallId} was not found");
                 }
 
+                var wasEstablished = entity.State == CallState.Established;
+
                 entity.State = CallState.Established;
-                entity.StartedAt = DateTime.UtcNow;
+                if (!wasEstablished)
+                {
+                    entity.StartedAt = DateTime.UtcNow;
+                }
+
                 entity.GraphId = request.GraphCallId;
 
                 await _callRepository.UpdateItemAsync(entity.Id, entity);
-                await AddDefaultParticipantsStreams(request.CallId);
+                await EnsureDefaultParticipantsStreams(request.CallId);
 
                 response.Id = entity.Id;
 
                 return response;
             }
 
-            private async Task AddDefaultParticipantsStreams(string callId)
+            private async Task EnsureDefaultParticipantsStreams(string callId)
             {
+                var specification = new ParticipantsStreamsGetFromCallSpecification(callId, archived: false);
+                var existingStreams = (await _participantStreamRepository.GetItemsAsync(specification)).ToList();
                 var insertTasks = new List<Task>();
-                foreach (var participant in defaultParticipantStreams)
+
+                foreach (var participant in CreateDefaultParticipantStreams())
                 {
+                    var alreadyExists = existingStreams.Any(existing =>
+                        existing.Type == participant.Type
+                        && string.Equals(existing.DisplayName, participant.DisplayName, StringComparison.Ordinal));
+
+                    if (alreadyExists)
+                    {
+                        continue;
+                    }
+
                     participant.CallId = callId;
                     insertTasks.Add(_participantStreamRepository.AddItemAsync(participant));
                 }
 
                 await Task.WhenAll(insertTasks);
+            }
+
+            private static IEnumerable<ParticipantStream> CreateDefaultParticipantStreams()
+            {
+                return new[]
+                {
+                    new ParticipantStream
+                    {
+                        ParticipantGraphId = Guid.NewGuid().ToString(),
+                        DisplayName = DefaultParticipantsDisplayNames.PrimarySpeaker,
+                        Type = ResourceType.PrimarySpeaker,
+                        State = StreamState.Disconnected,
+                        IsHealthy = true,
+                        Details = new ParticipantStreamDetails(),
+                    },
+                    new ParticipantStream
+                    {
+                        ParticipantGraphId = Guid.NewGuid().ToString(),
+                        DisplayName = DefaultParticipantsDisplayNames.ScreenShare,
+                        Type = ResourceType.Vbss,
+                        State = StreamState.Disconnected,
+                        IsHealthy = true,
+                        Details = new ParticipantStreamDetails(),
+                    },
+                };
             }
         }
     }

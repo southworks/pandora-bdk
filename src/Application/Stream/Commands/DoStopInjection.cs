@@ -64,7 +64,7 @@ namespace Application.Stream.Commands
 
                 try
                 {
-                    _bot.StopInjection();
+                    _bot.StopInjection(request.CallId);
 
                     entity.Error = null;
                     entity.EndedAt = DateTime.UtcNow;

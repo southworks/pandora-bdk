@@ -1,20 +1,22 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 using System.Collections.Generic;
-using Microsoft.Graph;
 
-namespace BotService.Infrastructure.Common
+namespace Microsoft.Graph
 {
     public class JoinMeetingIdMeetingInfo : MeetingInfo
     {
-        public JoinMeetingIdMeetingInfo(string joinMeetingId, string passcode)
+        public JoinMeetingIdMeetingInfo()
         {
             ODataType = "#microsoft.graph.joinMeetingIdMeetingInfo";
-            AdditionalData = new Dictionary<string, object>
-            {
-                { "joinMeetingId", joinMeetingId },
-                { "passcode", passcode },
-            };
+            AdditionalData = new Dictionary<string, object>();
+        }
+
+        public JoinMeetingIdMeetingInfo(string joinMeetingId, string passcode)
+            : this()
+        {
+            AdditionalData["joinMeetingId"] = joinMeetingId;
+            AdditionalData["passcode"] = passcode;
         }
     }
 }

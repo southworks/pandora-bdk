@@ -22,21 +22,21 @@ namespace Application.Interfaces.Common
 
         void StartInjection(StartStreamInjectionBody startStreamInjectionBody);
 
-        void StopInjection();
+        void StopInjection(string callId);
 
-        void SetInjectionVolume(SetInjectionVolumeRequest injectionVolumeRequest);
+        void SetInjectionVolume(string callId, SetInjectionVolumeRequest injectionVolumeRequest);
 
-        void DisplayInjection();
+        void DisplayInjection(string callId);
 
-        void HideInjection();
+        void HideInjection(string callId);
 
         StartStreamExtractionResponse StartExtraction(StartStreamExtractionBody streamBody);
 
         void StopExtraction(StopStreamExtractionBody streamBody);
 
-        Task MuteBotAsync();
+        Task MuteBotAsync(string callId);
 
-        Task UnmuteBotAsync();
+        Task UnmuteBotAsync(string callId);
 
         Task RegisterServiceAsync(string virtualMachineName);
 

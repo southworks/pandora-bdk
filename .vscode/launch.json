@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug BotService",
+      "type": "clr",
+      "request": "launch",
+      "preLaunchTask": "build BotService (Debug)",
+      "program": "${workspaceFolder}/src/BotService/bin/Debug/net472/win7-x64/BotService.exe",
+      "cwd": "${workspaceFolder}/src/BotService/bin/Debug/net472/win7-x64",
+      "args": ["--console"],
+      "stopAtEntry": false,
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "BROADCASTER_ENVIRONMENT": "local"
+      },
+      "console": "internalConsole",
+      "justMyCode": false
+    }
+  ]
+}

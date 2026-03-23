@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 
 namespace BotService.Infrastructure.Extensions
 {
@@ -17,6 +18,7 @@ namespace BotService.Infrastructure.Extensions
         public static void ConfigureEndpoints(this KestrelServerOptions options, X509Certificate2 certificate)
         {
             var configuration = options.ApplicationServices.GetRequiredService<IConfiguration>();
+            Log.Information("[Kestrel] Resolving configured endpoints.");
 
             var endpoints = configuration.GetSection("HttpServer:Endpoints")
                 .GetChildren()
@@ -31,6 +33,7 @@ namespace BotService.Infrastructure.Extensions
             {
                 var config = endpoint.Value;
                 var port = config.Port ?? (config.Scheme == "https" ? 443 : 80);
+                Log.Information("[Kestrel] Configuring endpoint {endpointName}. Host={host} Scheme={scheme} Port={port}", endpoint.Key, config.Host, config.Scheme, port);
 
                 var ipAddresses = new List<IPAddress>();
                 if (config.Host == "localhost")
@@ -49,6 +52,7 @@ namespace BotService.Infrastructure.Extensions
 
                 foreach (var address in ipAddresses)
                 {
+                    Log.Information("[Kestrel] Binding endpoint {endpointName} to address {address}:{port}", endpoint.Key, address, port);
                     options.Listen(
                         address,
                         port,
